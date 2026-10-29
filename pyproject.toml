@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "faircast"
+version = "0.1.0"
+description = "Fair Cast: unbiased bf16 export of RL master weights and training on the served copy"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Andrew Gao", email = "gaodrew@stanford.edu" }, { name = "William Gao" }]
+dependencies = ["torch>=2.1"]
+
+[project.optional-dependencies]
+example = ["transformers>=4.45", "datasets", "accelerate"]
+dev = ["pytest"]
+
+[project.urls]
+Repository = "https://github.com/andrewgcodes/faircast"
+
+[tool.setuptools]
+packages = ["faircast"]

@@ -1,0 +1,25 @@
+[
+ {
+  "steps": 150,
+  "prompts": 24,
+  "group": 8,
+  "max_new": 2048,
+  "n_eval": 512,
+  "eval_every": 10,
+  "tokens_logged": 24,
+  "seed": 0,
+  "objective": "grpo_clip",
+  "n_fp32_seqs": 48,
+  "task": "gsm8k",
+  "lr": 1e-06,
+  "name": "p32_q06_gsm8k_sr_ema05_s0",
+  "lag": 1,
+  "sync_mode": "sr",
+  "forward_mode": "autocast",
+  "save_final": true,
+  "resume": true,
+  "model": "Qwen/Qwen3-0.6B",
+  "eval_master": false,
+  "ema_export": 0.05
+ }
+]

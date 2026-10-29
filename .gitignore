@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+# paper build products
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.toc
+paper/*.synctex.gz
+paper/*.pdf
+paper/arxiv/
+paper/*.png
+# raw run data (not distributed in this repo)
+results/evals.json
+results/export_eval.json
+results/logs/
+results/status/
+runs/
+hf/
+paper/arxiv.tar.gz

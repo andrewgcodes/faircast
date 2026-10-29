@@ -1,0 +1,41 @@
+[
+ {
+  "steps": 100,
+  "prompts": 8,
+  "group": 8,
+  "max_new": 384,
+  "n_eval": 96,
+  "eval_every": 25,
+  "tokens_logged": 16,
+  "objective": "grpo_clip",
+  "n_fp32_seqs": 16,
+  "task": "math",
+  "lr": 1e-06,
+  "seed": 0,
+  "name": "p4_q4b_cast_lag1b",
+  "model": "Qwen/Qwen3-4B",
+  "lag": 1,
+  "sync_mode": "cast",
+  "vllm_mem": 0.18
+ },
+ {
+  "steps": 100,
+  "prompts": 8,
+  "group": 8,
+  "max_new": 384,
+  "n_eval": 96,
+  "eval_every": 25,
+  "tokens_logged": 16,
+  "objective": "grpo_clip",
+  "n_fp32_seqs": 16,
+  "task": "math",
+  "lr": 1e-06,
+  "seed": 0,
+  "name": "p4_q4b_srste_lag1b",
+  "model": "Qwen/Qwen3-4B",
+  "lag": 1,
+  "sync_mode": "sr",
+  "forward_mode": "ste",
+  "vllm_mem": 0.18
+ }
+]
