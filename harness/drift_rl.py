@@ -493,13 +493,15 @@ def run(cfg: dict):
             status(event="weights_synced", n_loaded=int(n_loaded)); sync_weights.checked = True
 
     from torch.func import functional_call
-    ste = cfg.get("forward_mode", "autocast") == "ste"
+    ste = cfg.get("forward_mode", "autocast") in ("ste", "ste_swap")
+    ste_swap = cfg.get("forward_mode", "autocast") == "ste_swap"   # train-on-served-copy by writing q into p.data for the step (checkpoint-safe: recompute sees q); master restored before opt.step
+    swap_state = dict(on=False, master={})
     MOE_KW = dict(output_router_logits=True) if cfg.get("moe") else {}
     def ste_params():
         # w_eff = theta + sg(q - theta), cast to bf16 == q in value; d w_eff / d theta = I
         return {n: (p + (last_bf16[n].float() - p.detach())).to(QDT) for n, p in model.named_parameters()}
     def policy_forward(ids, att, output_hidden_states=False, **kw):
-        if ste:
+        if ste and not swap_state["on"]:
             with torch.autocast("cuda", dtype=QDT, enabled=QDT != torch.float32):   # params are already bf16 (== synced q); autocast keeps activations/masks consistent
                 return functional_call(model, ste_params(), (), dict(input_ids=ids, attention_mask=att, output_hidden_states=output_hidden_states, **kw))
         with torch.autocast("cuda", dtype=QDT, enabled=QDT != torch.float32):
@@ -624,6 +626,11 @@ def run(cfg: dict):
                                  score_exact=exact.get((si, ti), None)))
         # ---- objective
         model.train(); opt.zero_grad(set_to_none=True)
+        if ste_swap:   # p.data <- q (served copy) so forward AND checkpoint-recompute run on q; grads land on p and are applied to the master (STE)
+            with torch.no_grad():
+                for n, p in model.named_parameters():
+                    swap_state["master"][n] = p.data.clone(); p.data.copy_(last_bf16[n].float())
+            swap_state["on"] = True
         tot_tokens = sum(m["length"] for m in meta); stats = dict(clipfrac=0.0, masked=0.0, ess=None)
         bs = tok_bs(6144); n_masked = 0; n_clip = 0
         # batch ESS for P3O (token level, over whole batch) from lp_now vs lp_vllm
@@ -700,6 +707,10 @@ def run(cfg: dict):
             loss = (l * mask).sum() / tot_tokens
             loss.backward()
             del o, lp
+        if ste_swap:
+            with torch.no_grad():
+                for n, p in model.named_parameters(): p.data.copy_(swap_state["master"][n])
+            swap_state["master"].clear(); swap_state["on"] = False
         if cfg.get("layer_loupe", True):
             import re as _re, collections
             g_agg = collections.defaultdict(float)

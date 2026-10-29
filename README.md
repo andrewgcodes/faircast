@@ -63,9 +63,10 @@ A GPU smoke test of the package and the example runs on [Modal](https://modal.co
 
 `harness/` is the training harness used for every run in the paper, as run on Modal (one H100 per arm: vLLM sampler with sleep mode and a Hugging Face trainer on the same device).
 
-* `harness/drift_rl.py`: GRPO loop, task rewards (Reasoning Gym, MBPP+/HumanEval+, MATH, GSM8K, synthetic games), export modes and the per-token logging behind Figure 4. Export is selected by `sync_mode` (`cast` = round-to-nearest, `sr` = stochastic rounding, `ef` = error feedback, `efsr` = dithered error feedback) and the trainer forward by `forward_mode` (`autocast` = bf16 autocast of the fp32 master, `ste` = served copy with straight-through gradients). Fair Cast is `sync_mode: "sr", forward_mode: "ste"`; `ema_export: 0.05` adds the explicit lag of §7.5.
+* `harness/drift_rl.py`: GRPO loop, task rewards (Reasoning Gym, MBPP+/HumanEval+, MATH, GSM8K, synthetic games), export modes and the per-token logging behind Figure 4. Export is selected by `sync_mode` (`cast` = round-to-nearest, `sr` = stochastic rounding, `ef` = error feedback, `efsr` = dithered error feedback) and the trainer forward by `forward_mode` (`autocast` = bf16 autocast of the fp32 master, `ste` = served copy with straight-through gradients via functional_call, `ste_swap` = served copy written into the parameter storage for the step, so the activation-checkpoint recompute also sees it). Fair Cast is `sync_mode: "sr"` with `forward_mode: "ste_swap"` (the verified form; `ste` is the earlier variant); `ema_export: 0.05` adds the explicit lag of §7.5.
 * `harness/configs/`: the exact per-arm JSON configurations that produced every curve and table entry. Arm naming: `*_cast*` round-to-nearest baseline, `*_srste*` / `*_sr_*` Fair Cast, `*_efste*` error feedback, `*_fp32sampler` fp32-sampler oracle, `*_ema*` EMA export.
 * `harness/eval_ckpt.py`: export-format evaluation of saved fp32 masters (Table 3). `harness/microbench_sync.py`: export-cost microbenchmark (§7.7). `harness/games_block.py`: the exact-solver game tasks.
+* `harness/eval_mbpp_heldout.py`: GPU re-score of saved served copies on the 224 MBPP+ problems whose task ids are not in the MBPP train/validation/prompt split (the paper reports MBPP+ on these). `harness/preflight.py`: launch-invariant checks for a config file (`python harness/preflight.py harness/configs/<file>.json harness/drift_rl.py`). `harness/configs/phase33_ste_verify.json`: the 0.6B verification arms behind Table 1 (patched Fair Cast and the nearest+served-copy control).
 
 ```bash
 pip install modal && modal setup
@@ -77,6 +78,7 @@ The harness expects two Modal volumes (`drift-loupe` for run outputs, `airbook-h
 ## Results and paper
 
 * `results/TABLE2_ENDPOINTS.md`: endpoint accuracy of every matched nearest-vs-Fair-Cast seed pair.
+* `results/mbppplus_overlap.json`: the 154 of 378 MBPP+ task ids that overlap the MBPP training split. `results/mbppplus_heldout_curves.json`: every MBPP+ arm's accuracy on all / held-out-224 / overlap problems at every checkpoint.
 * `paper/main.tex` + `paper/figures/`: the paper source. `make -C paper` builds `main.pdf` with pdflatex; `make -C paper arxiv` produces the flat `arxiv.tar.gz` for submission.
 * `paper/scripts/`: the scripts that draw the figures. `gen_intro_figs.py` is self-contained; the others read the per-step training logs and held-out evaluations of the released runs (`results/evals.json`, `results/logs/`), which are distributed separately from this repository.
 

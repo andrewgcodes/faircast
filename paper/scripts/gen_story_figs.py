@@ -2,8 +2,12 @@
 Data: results/evals.json (held-out evals) + per-step gen/train events parsed from results/logs/*.log (train_acc, mean_len, frac_bf16_changed, log-ratios)."""
 import json, glob, os, statistics as st, collections
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt; import numpy as np
-os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # repo root
+os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 E = json.load(open('results/evals.json'))
+# MBPP+ shares 154/378 task ids with the MBPP training split: plot the held-out-224 curves (results/mbppplus_heldout_curves.json, from per-problem eval_hits)
+if os.path.exists('results/mbppplus_heldout_curves.json'):
+    for _n, _c in json.load(open('results/mbppplus_heldout_curves.json')).items():
+        if _n in E: E[_n]['eval'] = [[int(k), v] for k, v in sorted(_c['heldout'].items(), key=lambda kv: int(kv[0]))]
 RED, BLUE, GREY, GREEN = '#c0392b', '#2471a3', '#555555', '#1e8449'
 plt.rcParams.update({'font.size': 8.5, 'axes.spines.top': False, 'axes.spines.right': False, 'axes.titlesize': 9, 'legend.fontsize': 7.5})
 
@@ -23,9 +27,9 @@ def events(names):
     return out
 
 def ev(n): return np.array(sorted(E[n]['eval'])) if n in E and E[n]['eval'] else np.zeros((0, 2))
-def series(ed, n, key, kind='gen', roll=10):
+def series(ed, n, key, kind='gen', roll=10, drop=None):
     d = ed[n][kind]; xs = sorted(d); ys = [d[s].get(key) for s in xs]
-    pts = [(x, y) for x, y in zip(xs, ys) if y is not None]
+    pts = [(x, y) for x, y in zip(xs, ys) if y is not None and not (drop and drop(x))]
     if not pts: return np.zeros(0), np.zeros(0)
     xs, ys = map(np.array, zip(*pts))
     if roll and len(ys) >= roll: ys = np.convolve(ys, np.ones(roll) / roll, mode='valid'); xs = xs[roll - 1:]
@@ -53,8 +57,9 @@ ax[0].bar(x - w / 2, scast, w, color=RED, label='bf16 export (nearest)'); ax[0].
 ax[0].set_xticks(x); ax[0].set_xticklabels(['before\nstep 1', 'after\nstep 1', 'after\nstep 2', 'after\nstep 3'][:len(x)]); ax[0].set_ylim(0, 1); ax[0].set_ylabel('held-out accuracy (64 problems)')
 ax[0].set_title('(a) Single-step test', loc='left', fontsize=9); ax[0].legend(loc='upper left', frameon=False)
 # (b) fraction of served weights changed per sync
+# the eval-time re-sync resets the change counter, so step%10==0 is logged as 0 for nearest: dropped
 for n, col, lab in (('p16_zebra_cast', RED, 'round-to-nearest'), ('p16_zebra_srste', BLUE, 'Fair Cast (stochastic rounding)')):
-    xs, ys = series(ed, n, 'frac_bf16_changed', roll=3); ax[1].plot(xs, 100 * np.maximum(ys, 1e-3), color=col, lw=1.4, label=lab)
+    xs, ys = series(ed, n, 'frac_bf16_changed', roll=3, drop=lambda x: x % 10 == 0); ax[1].plot(xs, 100 * np.maximum(ys, 1e-3), color=col, lw=1.4, label=lab)
 ax[1].set_yscale('log'); ax[1].set_xlabel('optimizer step'); ax[1].set_ylabel('% of served bf16 weights changed per step'); ax[1].set_title('(b) Served weights changed per step', loc='left', fontsize=9); ax[1].legend(frameon=False, loc='center right', bbox_to_anchor=(1, 0.45))
 # (c) hidden vs visible log-ratio
 xs, ys = series(ed, 'p16_kk_cast', 'mean_abs_logratio', 'train', roll=5); ax[2].plot(xs, ys, color=RED, lw=1.6, label='nearest: master vs served (hidden)')
@@ -64,7 +69,7 @@ ax[2].set_xlabel('optimizer step'); ax[2].set_ylabel('mean per-token |log-ratio|
 fig.tight_layout(w_pad=2.5); fig.savefig('paper/figures/figS1_problem.png', dpi=170); plt.close(fig)
 
 # ---------------- F2: zebra headline ----------------
-near = ['p16_zebra_cast', 'p16_zebra_cast_s1', 'p30_zebra_cast_s2']; fair = ['p16_zebra_srste', 'p16_zebra_srste_s1', 'p30_zebra_sr_s2']
+near = ['p16_zebra_cast', 'p16_zebra_cast_s1', 'p30_zebra_cast_s2']; fair = ['p16_zebra_srste', 'p16_zebra_srste_s1', 'p30_zebra_sr_s2', 'p25_zebra_srste_s0']
 ed = events(near + fair + ['p23_zebra_fp32sampler'])
 fig, ax = plt.subplots(3, 1, figsize=(6.4, 7.2), sharex=True, gridspec_kw={'height_ratios': [2.2, 1, 1]})
 band(ax[0], near, RED, 'round-to-nearest export (3 seeds, mean ± 1 s.d.)'); band(ax[0], fair, BLUE, 'Fair Cast (3 seeds, mean ± 1 s.d.)')
@@ -85,8 +90,8 @@ panels = [
     ('Knights & knaves · 0.6B · AdamW', ['p24_kk_q06_cast'], ['p24_kk_q06_srste'], None),
     ('Knights & knaves · 4B · AdamW', ['p24_kk_q4b_cast_h200'], ['p24_kk_q4b_srste_h200'], None),
     ('Nim (6k tokens) · 1.7B · AdamW', ['p29b_nim_cast_s0'], ['p29b_nim_sr_s0'], None),
-    ('GSM8K · 0.6B · AdamW (2 seeds)', ['p32_q06_gsm8k_cast_s0', 'p32f_q06_gsm8k_cast_s1'], ['p32e_q06_gsm8k_srste_s0', 'p32f_q06_gsm8k_srste_s1'], None),
-    ('MATH L3–5 · 0.6B · AdamW (2 seeds)', ['p32_q06_math_cast_s0', 'p32f_q06_math_cast_s1'], ['p32e_q06_math_srste_s0', 'p32f_q06_math_srste_s1'], None),
+    ('GSM8K · 0.6B · AdamW (3 seeds)', ['p32_q06_gsm8k_cast_s0', 'p32f_q06_gsm8k_cast_s1', 'p32g_q06_gsm8k_cast_s2'], ['p32e_q06_gsm8k_srste_s0', 'p32f_q06_gsm8k_srste_s1', 'p32g_q06_gsm8k_srste_s2'], None),
+    ('MATH L3–5 · 0.6B · AdamW (3 seeds)', ['p32_q06_math_cast_s0', 'p32f_q06_math_cast_s1', 'p32g_q06_math_cast_s2'], ['p32e_q06_math_srste_s0', 'p32f_q06_math_srste_s1', 'p32g_q06_math_srste_s2'], None),
 ]
 fig, axs = plt.subplots(2, 4, figsize=(12.5, 5.6)); axs = axs.ravel()
 for a, (title, n0s, n1s, orc) in zip(axs, panels):
