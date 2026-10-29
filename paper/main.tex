@@ -122,6 +122,8 @@ served model, and it exposes the implicit lag of round-to-nearest as a regulariz
 restored explicitly when a task needs it.
 \end{abstract}
 
+\begin{center}\textbf{Code:} \url{https://github.com/andrewgcodes/faircast}\end{center}
+
 \begin{figure}[H]\centering\includegraphics[width=\linewidth,height=3.3in,keepaspectratio]{figures/fig1_grid.png}\caption{Fair Cast learns faster and more stably than round-to-nearest export across tasks, model sizes and optimizers, and tracks the fp32 sampler where one was run. Held-out accuracy of the served copy against optimizer step on logic (a–d), game (e), mathematics (f, g) and code (h) tasks; bands are ± 1 s.d. across runs (panel (a): three round-to-nearest and four Fair Cast runs; panel (h): scored on the 224 MBPP+ problems absent from the training split); the dashed line is a sampler run in fp32 with no rounding at all.}\label{fig:grid}\end{figure}
 
 \section{Introduction}\label{introduction}
