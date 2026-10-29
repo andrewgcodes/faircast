@@ -77,7 +77,7 @@ The harness expects two Modal volumes (`drift-loupe` for run outputs, `airbook-h
 
 ## Results and paper
 
-* `results/TABLE2_ENDPOINTS.md`: endpoint accuracy of every matched nearest-vs-Fair-Cast seed pair.
+* `results/TABLE2_PAIRS.md`: endpoint accuracy of the 25 matched nearest-vs-Fair-Cast seed pairs behind Table 2 (18 ahead / 6 within a point / 1 behind, mean +6.1).
 * `results/mbppplus_overlap.json`: the 154 of 378 MBPP+ task ids that overlap the MBPP training split. `results/mbppplus_heldout_curves.json`: every MBPP+ arm's accuracy on all / held-out-224 / overlap problems at every checkpoint.
 * `paper/main.tex` + `paper/figures/`: the paper source. `make -C paper` builds `main.pdf` with pdflatex; `make -C paper arxiv` produces the flat `arxiv.tar.gz` for submission.
 * `paper/scripts/`: the scripts that draw the figures. `gen_intro_figs.py` is self-contained; the others read the per-step training logs and held-out evaluations of the released runs (`results/evals.json`, `results/logs/`), which are distributed separately from this repository.
