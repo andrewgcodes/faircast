@@ -1,0 +1,40 @@
+[
+ {
+  "steps": 150,
+  "prompts": 24,
+  "group": 8,
+  "max_new": 2048,
+  "n_eval": 128,
+  "eval_every": 25,
+  "tokens_logged": 24,
+  "seed": 0,
+  "objective": "grpo_clip",
+  "n_fp32_seqs": 48,
+  "task": "mbppplus",
+  "lr": 1e-06,
+  "name": "p6_mbpp_cast",
+  "lag": 1,
+  "sync_mode": "cast",
+  "forward_mode": "autocast",
+  "save_final": true
+ },
+ {
+  "steps": 150,
+  "prompts": 24,
+  "group": 8,
+  "max_new": 2048,
+  "n_eval": 128,
+  "eval_every": 25,
+  "tokens_logged": 24,
+  "seed": 0,
+  "objective": "grpo_clip",
+  "n_fp32_seqs": 48,
+  "task": "mbppplus",
+  "lr": 1e-06,
+  "name": "p6_mbpp_srste",
+  "lag": 1,
+  "sync_mode": "sr",
+  "forward_mode": "ste",
+  "save_final": true
+ }
+]

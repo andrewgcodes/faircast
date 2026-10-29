@@ -1,0 +1,25 @@
+[
+ {
+  "steps": 1,
+  "prompts": 8,
+  "group": 8,
+  "max_new": 4096,
+  "n_eval": 512,
+  "eval_every": 1,
+  "tokens_logged": 24,
+  "seed": 0,
+  "objective": "grpo_clip",
+  "n_fp32_seqs": 8,
+  "task": "games:mix",
+  "lr": 1e-06,
+  "name": "p28c_smoke_games_mix_4k",
+  "lag": 1,
+  "sync_mode": "cast",
+  "forward_mode": "autocast",
+  "save_final": false,
+  "resume": false,
+  "eval_master": false,
+  "eval_master_every": 50,
+  "ckpt": false
+ }
+]
