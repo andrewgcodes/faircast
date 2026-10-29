@@ -1,6 +1,6 @@
 # Table 2: the 25 matched nearest-vs-Fair-Cast seed pairs (Table 2 and §7.5 of the paper)
 
-Scope: complete nearest-vs-Fair-Cast pairs on Qwen3-0.6B/1.7B/4B for the tasks shown in the paper. Excluded from this scope (runs outside the paper): Qwen3-8B zebra, Qwen2.5-1.5B MATH, OLMoE MATH, the 500-step Countdown pair, partial pairs. MBPP+ endpoints are on the 224 problems absent from the MBPP training split (121 of the first 128 for seed 0); other rows are the final served-copy eval as logged (per-arm curves in evals.json).
+Scope: complete nearest-vs-Fair-Cast pairs on Qwen3-0.6B/1.7B/4B for the tasks shown in the paper.
 
 | task | model | seed | optimizer | n_eval | nearest final | Fair Cast final | Δ (pts) |
 |---|---|---|---|---|---|---|---|
